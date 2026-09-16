@@ -26,20 +26,26 @@ function speakAnswer(answer) {
 
 function calculateExpression(expression) {
 
-    let text = expression.toLowerCase();
+    let text = expression.toLowerCase().trim();
 
+    // Convert spoken words to operators
+    text = text.replace(/multiplied by/g, "*");
+    text = text.replace(/divided by/g, "/");
     text = text.replace(/plus/g, "+");
     text = text.replace(/minus/g, "-");
     text = text.replace(/times/g, "*");
-    text = text.replace(/multiplied by/g, "*");
-    text = text.replace(/divided by/g, "/");
+    text = text.replace(/into/g, "*");
 
+    // Remove unwanted characters
     text = text.replace(/[^0-9+\-*/%.() ]/g, "");
 
-    if (!text.trim()) {
+    text = text.trim();
+
+    if (text === "") {
         throw new Error("Invalid expression");
     }
 
+    // Make sure only valid calculator characters remain
     if (!/^[0-9+\-*/%.() ]+$/.test(text)) {
         throw new Error("Invalid expression");
     }
@@ -82,7 +88,9 @@ voiceButton.addEventListener("click", () => {
         window.webkitSpeechRecognition;
 
     if (!SpeechRecognition) {
+
         alert("Voice input is not supported in this browser.");
+
         return;
     }
 

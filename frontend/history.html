@@ -8,7 +8,85 @@
 
     <title>Calculation History</title>
 
-    <link rel="stylesheet" href="style.css">
+    <style>
+
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+            background:#e6f0ff;
+        }
+
+        .container {
+            width: 70%;
+            max-width: 750px;
+            margin: 50px auto;
+            padding: 30px;
+            background:#e6f0ff;
+            border-radius: 15px;
+            border:1px solid blue;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
+        }
+
+        h1 {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        #history {
+            margin-bottom: 25px;
+        }
+
+        #history .result-box {
+            width: 40%;
+            background: #f8f9fa;
+            padding: 10px 15px;
+            margin:0 auto 10px auto;
+            border-radius: 8px;
+            border: 1px solid #ddd;
+        }
+
+        #history .result-box p {
+            margin: 5px 0;
+            color: #666;
+            font-size: 13px;
+        }
+
+        #history .result-box h3 {
+            margin: 3px 0 8px;
+            font-size: 18px;
+        }
+
+        #history .result-box p:last-child {
+            font-size: 12px;
+            color: #888;
+        }
+
+        button {
+            padding: 12px 20px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            background-color:#4f73df;
+            color: white;
+        }
+
+        .history-button {
+            display: inline-block;
+            padding: 12px 20px;
+            text-decoration: none;
+            border-radius: 8px;
+            background-color: #4f73df;
+            color: white;
+        }
+        .button-container{
+            width:100%;
+            display:flex;
+            justify-content: center;
+            align-items: center;
+            gap:10px;
+        }
+
+    </style>
 
 </head>
 
@@ -21,14 +99,15 @@
         <div id="history">
             Loading...
         </div>
-
+        <div class="button-container">
         <button onclick="clearHistory()">
             Clear History
         </button>
 
-        <a href="index.html" class="history-button">
+        <a href="/static/index.html" class="history-button">
             Back to Calculator
         </a>
+        </div>
 
     </div>
 

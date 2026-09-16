@@ -8,7 +8,7 @@
 
     <title>Calculation History</title>
 
-    <link rel="stylesheet" href="/static/style.css">
+    <link rel="stylesheet" href="style.css">
 
 </head>
 
@@ -26,7 +26,7 @@
             Clear History
         </button>
 
-        <a href="/" class="history-button">
+        <a href="index.html" class="history-button">
             Back to Calculator
         </a>
 
@@ -35,58 +35,48 @@
 
     <script>
 
-        async function loadHistory() {
+        function loadHistory() {
 
-            try {
+            const history = document.getElementById("history");
 
-                const response = await fetch("/history");
+            const data = JSON.parse(
+                localStorage.getItem("calculatorHistory") || "[]"
+            );
 
-                const data = await response.json();
-
-                const history = document.getElementById("history");
-
-                history.innerHTML = "";
+            history.innerHTML = "";
 
 
-                if (data.length === 0) {
+            if (data.length === 0) {
 
-                    history.innerHTML = "<p>No history found</p>";
+                history.innerHTML = "<p>No history found</p>";
 
-                    return;
-                }
-
-
-                data.forEach(item => {
-
-                    const div = document.createElement("div");
-
-                    div.className = "result-box";
-
-                    div.innerHTML = `
-                        <p>Expression</p>
-                        <h3>${item.expression}</h3>
-
-                        <p>Answer</p>
-                        <h3>${item.answer}</h3>
-
-                        <p>${item.created_at}</p>
-                    `;
-
-                    history.appendChild(div);
-
-                });
-
-            } catch (error) {
-
-                console.error(error);
-
-                document.getElementById("history").innerText =
-                    "Unable to load history.";
+                return;
             }
+
+
+            data.forEach(item => {
+
+                const div = document.createElement("div");
+
+                div.className = "result-box";
+
+                div.innerHTML = `
+                    <p>Expression</p>
+                    <h3>${item.expression}</h3>
+
+                    <p>Answer</p>
+                    <h3>${item.answer}</h3>
+
+                    <p>${item.created_at}</p>
+                `;
+
+                history.appendChild(div);
+
+            });
         }
 
 
-        async function clearHistory() {
+        function clearHistory() {
 
             const confirmDelete = confirm(
                 "Do you want to delete all history?"
@@ -96,10 +86,7 @@
                 return;
             }
 
-
-            await fetch("/history", {
-                method: "DELETE"
-            });
+            localStorage.removeItem("calculatorHistory");
 
             loadHistory();
         }

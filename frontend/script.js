@@ -2,15 +2,10 @@ const voiceButton = document.getElementById("voiceButton");
 const expressionText = document.getElementById("expression");
 const answerText = document.getElementById("answer");
 
-const SpeechRecognition =
-    window.SpeechRecognition ||
-    window.webkitSpeechRecognition;
-
 
 function speakAnswer(answer) {
 
     if (!window.speechSynthesis) {
-        alert("Your browser does not support voice output.");
         return;
     }
 
@@ -29,7 +24,62 @@ function speakAnswer(answer) {
 }
 
 
+function calculateExpression(expression) {
+
+    let text = expression.toLowerCase();
+
+    text = text.replace(/plus/g, "+");
+    text = text.replace(/minus/g, "-");
+    text = text.replace(/times/g, "*");
+    text = text.replace(/multiplied by/g, "*");
+    text = text.replace(/divided by/g, "/");
+
+    text = text.replace(/[^0-9+\-*/%.() ]/g, "");
+
+    if (!text.trim()) {
+        throw new Error("Invalid expression");
+    }
+
+    if (!/^[0-9+\-*/%.() ]+$/.test(text)) {
+        throw new Error("Invalid expression");
+    }
+
+    const answer = Function(
+        '"use strict"; return (' + text + ')'
+    )();
+
+    if (!Number.isFinite(answer)) {
+        throw new Error("Invalid calculation");
+    }
+
+    return answer;
+}
+
+
+function saveHistory(expression, answer) {
+
+    let history = JSON.parse(
+        localStorage.getItem("calculatorHistory") || "[]"
+    );
+
+    history.unshift({
+        expression: expression,
+        answer: answer,
+        created_at: new Date().toLocaleString()
+    });
+
+    localStorage.setItem(
+        "calculatorHistory",
+        JSON.stringify(history)
+    );
+}
+
+
 voiceButton.addEventListener("click", () => {
+
+    const SpeechRecognition =
+        window.SpeechRecognition ||
+        window.webkitSpeechRecognition;
 
     if (!SpeechRecognition) {
         alert("Voice input is not supported in this browser.");
@@ -47,7 +97,7 @@ voiceButton.addEventListener("click", () => {
     recognition.start();
 
 
-    recognition.onresult = async (event) => {
+    recognition.onresult = (event) => {
 
         const text = event.results[0][0].transcript;
 
@@ -55,19 +105,14 @@ voiceButton.addEventListener("click", () => {
 
         try {
 
-            const response = await fetch(
-                `/calculate?expression=${encodeURIComponent(text)}`,
-                {
-                    method: "POST"
-                }
-            );
+            const answer = calculateExpression(text);
 
-            const data = await response.json();
+            answerText.innerText = answer;
 
-            answerText.innerText = data.answer;
+            saveHistory(text, answer);
 
             setTimeout(() => {
-                speakAnswer(data.answer);
+                speakAnswer(answer);
             }, 300);
 
         } catch (error) {
@@ -76,7 +121,9 @@ voiceButton.addEventListener("click", () => {
 
             answerText.innerText = "Error";
 
-            speakAnswer("Sorry, I could not calculate that.");
+            speakAnswer(
+                "Sorry, I could not calculate that."
+            );
         }
     };
 

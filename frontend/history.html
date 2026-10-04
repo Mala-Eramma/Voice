@@ -27,6 +27,7 @@
 
         h1 {
             text-align: center;
+            color: #183b80;
         }
 
         .result-box {
@@ -57,16 +58,25 @@
             margin-top: 20px;
         }
 
-        button,
-        .history-button {
+        button, .history-button {
             padding: 12px 20px;
             border: none;
             border-radius: 8px;
             cursor: pointer;
-            background: #4f73df;
+            background: #183b80;
             color: white;
             text-decoration: none;
             font-size: 14px;
+        }
+
+        button:hover, .history-button:hover {
+            background: #315bb0;
+        }
+
+        .empty-message {
+            text-align: center;
+            padding: 20px;
+            color: #555;
         }
     </style>
 </head>
@@ -75,89 +85,68 @@
     <div class="container">
         <h1>Calculation History</h1>
 
-        <div id="history">Loading history...</div>
+        <div id="history"></div>
 
         <div class="button-container">
-            <button onclick="clearHistory()">Clear History</button>
-            <a href="/" class="history-button">Back to Calculator</a>
+            <button id="clearButton">Clear History</button>
+            <a href="index.html" class="history-button">Back to Calculator</a>
         </div>
     </div>
 
     <script>
-        async function loadHistory() {
+        function loadHistory() {
             const container = document.getElementById("history");
-            container.textContent = "Loading history...";
+            const records = JSON.parse(
+                localStorage.getItem("voiceHistory") || "[]"
+            );
 
-            try {
-                const response = await fetch("/history");
+            container.replaceChildren();
 
-                if (!response.ok) {
-                    throw new Error("Could not load history");
-                }
-
-                const records = await response.json();
-                container.replaceChildren();
-
-                if (records.length === 0) {
-                    container.textContent = "No history found";
-                    return;
-                }
-
-                records.forEach(item => {
-                    const box = document.createElement("div");
-                    box.className = "result-box";
-
-                    const expressionLabel = document.createElement("p");
-                    expressionLabel.textContent = "Expression";
-
-                    const expression = document.createElement("h3");
-                    expression.textContent = item.expression;
-
-                    const answerLabel = document.createElement("p");
-                    answerLabel.textContent = "Answer";
-
-                    const answer = document.createElement("h3");
-                    answer.textContent = item.answer;
-
-                    const date = document.createElement("p");
-                    date.textContent = item.created_at || "";
-
-                    box.append(
-                        expressionLabel,
-                        expression,
-                        answerLabel,
-                        answer,
-                        date
-                    );
-
-                    container.appendChild(box);
-                });
-            } catch (error) {
-                console.error(error);
-                container.textContent = "Unable to load calculation history.";
-            }
-        }
-
-        async function clearHistory() {
-            if (!confirm("Do you want to delete all history?")) {
+            if (records.length === 0) {
+                const message = document.createElement("p");
+                message.className = "empty-message";
+                message.textContent = "No calculation history found.";
+                container.appendChild(message);
                 return;
             }
 
-            try {
-                const response = await fetch("/history", {
-                    method: "DELETE"
-                });
+            records.forEach(item => {
+                const box = document.createElement("div");
+                box.className = "result-box";
 
-                if (!response.ok) {
-                    throw new Error("Could not clear history");
-                }
+                const expressionLabel = document.createElement("p");
+                expressionLabel.textContent = "Expression";
 
-                await loadHistory();
-            } catch (error) {
-                console.error(error);
-                alert("Unable to clear history. Please try again.");
-            }
+                const expression = document.createElement("h3");
+                expression.textContent = item.expression;
+
+                const answerLabel = document.createElement("p");
+                answerLabel.textContent = "Answer";
+
+                const answer = document.createElement("h3");
+                answer.textContent = item.answer;
+
+                const date = document.createElement("p");
+                date.textContent = item.created_at || "";
+
+                box.append(
+                    expressionLabel,
+                    expression,
+                    answerLabel,
+                    answer,
+                    date
+                );
+
+                container.appendChild(box);
+            });
         }
+
+        document.getElementById("clearButton").addEventListener("click", () => {
+            if (confirm("Do you want to delete all history?")) {
+                localStorage.removeItem("voiceHistory");
+                loadHistory();
+            }
+        });
 
         loadHistory();
     </script>

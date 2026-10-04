@@ -11,6 +11,7 @@ function speakAnswer(answer) {
     const speech = new SpeechSynthesisUtterance(
         "The answer is " + answer
     );
+
     speech.lang = "en-US";
     speech.rate = 0.8;
     window.speechSynthesis.speak(speech);
@@ -46,41 +47,42 @@ function convertExpression(expression) {
     text = text.replace(/minus/g, "-");
     text = text.replace(/times/g, "*");
     text = text.replace(/into/g, "*");
-
-    // Convert the spoken multiplication sign x
     text = text.replace(/\s*x\s*/g, "*");
     text = text.replace(/\s+/g, "");
 
     if (!text || !/^[0-9+\-*/%.()]+$/.test(text)) {
-        throw new Error("Invalid expression: " + text);
+        throw new Error("Invalid expression");
     }
 
     return text;
 }
 
-async function calculateExpression(expression) {
+function calculateExpression(expression) {
     const converted = convertExpression(expression);
 
-    const response = await fetch(
-        "/calculate?expression=" + encodeURIComponent(converted),
-        { method: "POST" }
-    );
+    const answer = Function(
+        '"use strict"; return (' + converted + ')'
+    )();
 
-    const data = await response.json();
-
-    if (!response.ok) {
-        throw new Error(data.detail || "Calculation request failed");
-    }
-
-    if (
-        data.answer === null ||
-        data.answer === undefined ||
-        data.answer === "Invalid calculation"
-    ) {
+    if (typeof answer !== "number" || !Number.isFinite(answer)) {
         throw new Error("Invalid calculation");
     }
 
-    return data.answer;
+    return answer;
+}
+
+function saveHistory(expression, answer) {
+    const history = JSON.parse(
+        localStorage.getItem("voiceHistory") || "[]"
+    );
+
+    history.unshift({
+        expression: expression,
+        answer: answer,
+        created_at: new Date().toLocaleString()
+    });
+
+    localStorage.setItem("voiceHistory", JSON.stringify(history));
 }
 
 if (voiceButton) {
@@ -104,15 +106,17 @@ if (voiceButton) {
         voiceButton.textContent = "Listening...";
         voiceButton.disabled = true;
 
-        recognition.onresult = async (event) => {
+        recognition.onresult = (event) => {
             const spokenText = event.results[0][0].transcript;
 
             expressionText.textContent = spokenText;
             answerText.textContent = "Calculating...";
 
             try {
-                const answer = await calculateExpression(spokenText);
+                const answer = calculateExpression(spokenText);
+
                 answerText.textContent = answer;
+                saveHistory(spokenText, answer);
                 speakAnswer(answer);
             } catch (error) {
                 console.error("Calculation error:", error);

@@ -1,180 +1,165 @@
+
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
-
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
     <title>Calculation History</title>
 
     <style>
-
         body {
             margin: 0;
+            padding: 20px;
             font-family: Arial, sans-serif;
-            background:#e6f0ff;
+            background: #e6f0ff;
         }
 
         .container {
-            width: 70%;
+            width: 90%;
             max-width: 750px;
-            margin: 50px auto;
-            padding: 30px;
-            background:#e6f0ff;
+            margin: 30px auto;
+            padding: 25px;
+            background: #e6f0ff;
             border-radius: 15px;
-            border:1px solid blue;
+            border: 1px solid blue;
             box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
         }
 
         h1 {
             text-align: center;
-            margin-bottom: 30px;
         }
 
-        #history {
-            margin-bottom: 25px;
-        }
-
-        #history .result-box {
-            width: 40%;
+        .result-box {
             background: #f8f9fa;
-            padding: 10px 15px;
-            margin:0 auto 10px auto;
+            padding: 12px 15px;
+            margin: 12px auto;
             border-radius: 8px;
             border: 1px solid #ddd;
+            overflow-wrap: anywhere;
         }
 
-        #history .result-box p {
+        .result-box p {
             margin: 5px 0;
             color: #666;
             font-size: 13px;
         }
 
-        #history .result-box h3 {
+        .result-box h3 {
             margin: 3px 0 8px;
             font-size: 18px;
         }
 
-        #history .result-box p:last-child {
-            font-size: 12px;
-            color: #888;
+        .button-container {
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 20px;
         }
 
-        button {
+        button,
+        .history-button {
             padding: 12px 20px;
             border: none;
             border-radius: 8px;
             cursor: pointer;
-            background-color:#4f73df;
+            background: #4f73df;
             color: white;
-        }
-
-        .history-button {
-            display: inline-block;
-            padding: 12px 20px;
             text-decoration: none;
-            border-radius: 8px;
-            background-color: #4f73df;
-            color: white;
+            font-size: 14px;
         }
-        .button-container{
-            width:100%;
-            display:flex;
-            justify-content: center;
-            align-items: center;
-            gap:10px;
-        }
-
     </style>
-
 </head>
 
 <body>
-
     <div class="container">
-
         <h1>Calculation History</h1>
 
-        <div id="history">
-            Loading...
-        </div>
+        <div id="history">Loading history...</div>
+
         <div class="button-container">
-        <button onclick="clearHistory()">
-            Clear History
-        </button>
-
-        <a href="index.html" class="history-button">
-            Back to Calculator
-        </a>
+            <button onclick="clearHistory()">Clear History</button>
+            <a href="/" class="history-button">Back to Calculator</a>
         </div>
-
     </div>
 
-
     <script>
+        async function loadHistory() {
+            const container = document.getElementById("history");
+            container.textContent = "Loading history...";
 
-        function loadHistory() {
+            try {
+                const response = await fetch("/history");
 
-            const history = document.getElementById("history");
+                if (!response.ok) {
+                    throw new Error("Could not load history");
+                }
 
-            const data = JSON.parse(
-                localStorage.getItem("calculatorHistory") || "[]"
-            );
+                const records = await response.json();
+                container.replaceChildren();
 
-            history.innerHTML = "";
+                if (records.length === 0) {
+                    container.textContent = "No history found";
+                    return;
+                }
 
+                records.forEach(item => {
+                    const box = document.createElement("div");
+                    box.className = "result-box";
 
-            if (data.length === 0) {
+                    const expressionLabel = document.createElement("p");
+                    expressionLabel.textContent = "Expression";
 
-                history.innerHTML = "<p>No history found</p>";
+                    const expression = document.createElement("h3");
+                    expression.textContent = item.expression;
 
+                    const answerLabel = document.createElement("p");
+                    answerLabel.textContent = "Answer";
+
+                    const answer = document.createElement("h3");
+                    answer.textContent = item.answer;
+
+                    const date = document.createElement("p");
+                    date.textContent = item.created_at || "";
+
+                    box.append(
+                        expressionLabel,
+                        expression,
+                        answerLabel,
+                        answer,
+                        date
+                    );
+
+                    container.appendChild(box);
+                });
+            } catch (error) {
+                console.error(error);
+                container.textContent = "Unable to load calculation history.";
+            }
+        }
+
+        async function clearHistory() {
+            if (!confirm("Do you want to delete all history?")) {
                 return;
             }
 
+            try {
+                const response = await fetch("/history", {
+                    method: "DELETE"
+                });
 
-            data.forEach(item => {
+                if (!response.ok) {
+                    throw new Error("Could not clear history");
+                }
 
-                const div = document.createElement("div");
-
-                div.className = "result-box";
-
-                div.innerHTML = `
-                    <p>Expression</p>
-                    <h3>${item.expression}</h3>
-
-                    <p>Answer</p>
-                    <h3>${item.answer}</h3>
-
-                    <p>${item.created_at}</p>
-                `;
-
-                history.appendChild(div);
-
-            });
-        }
-
-
-        function clearHistory() {
-
-            const confirmDelete = confirm(
-                "Do you want to delete all history?"
-            );
-
-            if (!confirmDelete) {
-                return;
+                await loadHistory();
+            } catch (error) {
+                console.error(error);
+                alert("Unable to clear history. Please try again.");
             }
-
-            localStorage.removeItem("calculatorHistory");
-
-            loadHistory();
         }
-
 
         loadHistory();
-
     </script>
-
 </body>
-
 </html>

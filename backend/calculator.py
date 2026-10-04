@@ -1,35 +1,71 @@
-import re
+
+import ast
+import operator
+import math
+
+OPERATORS = {
+    ast.Add: operator.add,
+    ast.Sub: operator.sub,
+    ast.Mult: operator.mul,
+    ast.Div: operator.truediv,
+    ast.Mod: operator.mod,
+    ast.UAdd: operator.pos,
+    ast.USub: operator.neg,
+}
+
 
 def calculate(expression):
     try:
-        original_expression = expression.lower().strip()
+        text = expression.lower().strip()
 
-        expression = original_expression
+        replacements = [
+            ("multiplied by", "*"),
+            ("divided by", "/"),
+            ("multiply", "*"),
+            ("times", "*"),
+            ("into", "*"),
+            ("plus", "+"),
+            ("minus", "-"),
+            ("divide", "/"),
+        ]
 
-        expression = expression.replace("multiplied by", "*")
-        expression = expression.replace("multiply", "*")
-        expression = expression.replace("times", "*")
-        expression = expression.replace("into", "*")
-        expression = expression.replace(" x ", "*")
-        expression = expression.replace(" x", "*")
-        expression = expression.replace("x ", "*")
-        expression = expression.replace("plus", "+")
-        expression = expression.replace("minus", "-")
-        expression = expression.replace("divided by", "/")
-        expression = expression.replace("divide", "/")
+        for word, symbol in replacements:
+            text = text.replace(word, symbol)
 
-        expression = re.sub(r"\s+", "", expression)
+        # Convert x into multiplication
+        import re
+        text = re.sub(r"\s*x\s*", "*", text)
+        text = re.sub(r"\s+", "", text)
 
-        if not re.fullmatch(r"[0-9+\-*/().]+", expression):
+        # Accept only basic arithmetic expressions
+        if not text or not re.fullmatch(r"[0-9+\-*/%.()]+", text):
             return "Invalid calculation"
 
-        answer = eval(
-            expression,
-            {"__builtins__": {}},
-            {}
-        )
+        tree = ast.parse(text, mode="eval")
 
-        return answer
+        def evaluate(node):
+            if isinstance(node, ast.Expression):
+                return evaluate(node.body)
+
+            if isinstance(node, ast.Constant) and type(node.value) in (int, float):
+                return node.value
+
+            if isinstance(node, ast.BinOp) and type(node.op) in OPERATORS:
+                left = evaluate(node.left)
+                right = evaluate(node.right)
+                result = OPERATORS[type(node.op)](left, right)
+
+                if not math.isfinite(result):
+                    raise ValueError("Invalid result")
+
+                return result
+
+            if isinstance(node, ast.UnaryOp) and type(node.op) in OPERATORS:
+                return OPERATORS[type(node.op)](evaluate(node.operand))
+
+            raise ValueError("Invalid expression")
+
+        return evaluate(tree)
 
     except Exception:
         return "Invalid calculation"
